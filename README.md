@@ -4,14 +4,99 @@ An encrypted file upload and download service. Django and Gunicorn run behind an
 with PostgreSQL for metadata, all orchestrated with Docker Compose. Every uploaded file is encrypted with
 AES-256-GCM (chunked, streaming, envelope encryption) before it is written to disk.
 
-```
-Browser --HTTPS 443--> mynginx --HTTP (internal network)--> django-web (Gunicorn :8000) --> db (PostgreSQL)
-         HTTP 80 (301 to HTTPS)                                   |
-                                                                  +--> file_data volume (ciphertext only)
+## System design
+
+```mermaid
+flowchart LR
+    B["Browser"]
+
+    subgraph VM["Ubuntu VM, Docker Compose"]
+        N["<b>mynginx</b><br/>Nginx, TLS<br/>publishes 80 and 443"]
+        D["<b>django-web</b><br/>Gunicorn and Django<br/>port 8000, internal only"]
+        P[("<b>db</b><br/>PostgreSQL<br/>internal network")]
+        V[("<b>file_data volume</b><br/>ciphertext only")]
+        S{{"<b>Docker secret</b><br/>master_key"}}
+    end
+
+    B -->|"HTTPS 443"| N
+    B -.->|"HTTP 80, redirected"| N
+    N -->|"proxied, no buffering"| D
+    D -->|"metadata, wrapped keys"| P
+    D -->|"encrypted chunks"| V
+    S -.->|"mounted read only"| D
 ```
 
 Only `mynginx` publishes ports. `django-web` exposes port 8000 to the Compose network only. `db` sits on an
 `internal: true` network with no route to the outside, and the ciphertext volume is mounted only into `django-web`.
+
+### Upload workflow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as Browser
+    participant N as Nginx
+    participant D as Django
+    participant F as File volume
+    participant P as PostgreSQL
+
+    U->>N: POST /files/upload/ (raw body, X-CSRFToken)
+    N->>D: stream the body, no buffering
+    D->>D: check session, CSRF and size limit
+    D->>D: validate extension and magic bytes
+    D->>D: generate data key and base nonce
+    loop every 1 MiB chunk
+        D->>D: AES-256-GCM encrypt
+        D->>F: append ciphertext to uuid.part
+    end
+    D->>F: atomic rename to uuid.enc
+    D->>D: wrap data key with master key
+    D->>P: store metadata and wrapped key
+    D-->>U: 201 Created, audit log entry
+```
+
+### Download workflow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as Browser
+    participant N as Nginx
+    participant D as Django
+    participant P as PostgreSQL
+    participant F as File volume
+
+    U->>N: GET /files/uuid/download/
+    N->>D: proxy request
+    D->>P: look up file owned by this user
+    alt not found or owned by someone else
+        D-->>U: 404, audit log ACCESS_DENIED
+    else owned by the user
+        P-->>D: metadata and wrapped key
+        D->>D: unwrap data key with master key
+        D->>F: pass 1, read and authenticate every chunk
+        alt any tag check fails
+            D-->>U: 500, nothing sent, audit log DOWNLOAD_FAILED
+        else all chunks valid
+            D->>F: pass 2, read, authenticate and decrypt
+            D-->>U: stream plaintext with exact Content-Length
+        end
+    end
+```
+
+### Key hierarchy
+
+```mermaid
+flowchart TD
+    M["<b>Master key</b><br/>256 bit, Docker secret<br/>never stored in DB, image or volume"]
+    W["<b>Wrapped data key</b><br/>stored in PostgreSQL<br/>AES-256-GCM, AAD: wrap and file uuid"]
+    K["<b>Data key</b><br/>random 256 bit, one per file<br/>exists in memory only"]
+    C["<b>Chunk ciphertext</b><br/>1 MiB per chunk<br/>nonce: 8 random bytes plus counter<br/>AAD: uuid, chunk index, is_final"]
+
+    M -->|"wraps"| W
+    W -->|"unwrapped on demand"| K
+    K -->|"encrypts"| C
+```
 
 ## Features
 
