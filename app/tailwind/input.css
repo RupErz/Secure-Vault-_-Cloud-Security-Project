@@ -1,0 +1,43 @@
+/* Self-hosted IBM Plex (copied from @fontsource at build time by copy-fonts.js).
+   Three roles only: Sans = interface, Serif = page titles + wordmark, Mono = hashes/nonces/ids. */
+@font-face { font-family: "IBM Plex Sans";  font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/ibm-plex-sans-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Sans";  font-weight: 500; font-style: normal; font-display: swap; src: url("fonts/ibm-plex-sans-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Sans";  font-weight: 600; font-style: normal; font-display: swap; src: url("fonts/ibm-plex-sans-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Serif"; font-weight: 500; font-style: normal; font-display: swap; src: url("fonts/ibm-plex-serif-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono";  font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2"); }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---- Browser defaults, themed (not left at the platform look) ---------------------------- */
+@layer base {
+  html { color-scheme: light; accent-color: theme("colors.ok"); scrollbar-color: theme("colors.edge") theme("colors.paper"); }
+  body { @apply bg-paper font-sans text-base leading-relaxed text-ink antialiased; font-variant-numeric: tabular-nums; }
+  ::selection { background: theme("colors.ok-tint"); color: theme("colors.ink"); }
+  input, textarea { caret-color: theme("colors.ok"); }
+  :focus-visible { outline: 2px solid theme("colors.ok"); outline-offset: 2px; border-radius: 2px; }
+  a { text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  h1, h2, h3 { text-wrap: balance; }
+  p { text-wrap: pretty; }
+  button { cursor: pointer; }
+}
+
+/* ---- A small set of components; everything else is plain utilities ----------------------- */
+@layer components {
+  .btn { @apply inline-flex items-center justify-center rounded border px-3 py-1.5 text-sm font-medium transition-colors duration-150; }
+  .btn-primary { @apply btn border-ink bg-ink text-paper hover:bg-ink-2 hover:border-ink-2; }
+  .btn-quiet { @apply btn border-edge bg-transparent text-ink hover:bg-sheet; }
+  .btn-danger { @apply btn border-transparent bg-transparent text-bad hover:bg-bad-tint; }
+  .link { @apply text-ink underline decoration-edge hover:decoration-ink; }
+  .field { @apply mt-1 block w-full rounded border border-edge bg-sheet px-3 py-2 text-base text-ink placeholder:text-ink-3; }
+  .label { @apply block text-sm font-medium text-ink; }
+  .help { @apply mt-1 text-sm text-ink-2; }
+  .th { @apply px-3 py-2 text-left text-sm font-medium text-ink-2; }
+  .td { @apply px-3 py-3 align-middle; }
+}
+
+/* Reduced motion = fewer and gentler animations: the only motion left is state feedback, so drop it. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}

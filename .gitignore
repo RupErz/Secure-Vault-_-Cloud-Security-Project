@@ -1,0 +1,14 @@
+.env
+secrets/
+nginx/certs/
+__pycache__/
+*.pyc
+.venv/
+db.sqlite3
+staticfiles/
+storage_dev/
+dist/
+node_modules/
+app/tailwind/dist/
+app/vault/static/vault/tailwind.css
+app/vault/static/vault/fonts/

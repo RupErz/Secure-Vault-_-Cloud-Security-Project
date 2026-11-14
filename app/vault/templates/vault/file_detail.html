@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ f.original_name }}{% endblock %}
+{% block content %}
+<p class="text-sm text-ink-2"><a href="{% url 'file_list' %}" class="link">My files</a> / details</p>
+<h1 class="mt-2 break-words font-serif text-3xl font-medium">{{ f.original_name }}</h1>
+<p class="mt-3 max-w-prose text-balance text-ink-2">On disk this file is ciphertext. It is encrypted with a 256-bit key made for this file alone, and that key is stored only in wrapped (encrypted) form. The master key that unwraps it is kept outside the database and the file volume.</p>
+<div class="mt-5 flex items-center gap-2">
+  <a href="{% url 'file_download' f.id %}" class="btn-primary no-underline">Download (decrypts and verifies)</a>
+  <form method="post" action="{% url 'file_delete' f.id %}" data-confirm="Delete “{{ f.original_name|escapejs }}” permanently? This cannot be undone.">{% csrf_token %}
+    <button class="btn-danger">Delete</button>
+  </form>
+</div>
+
+<div class="mt-10 grid gap-x-12 gap-y-10 lg:grid-cols-2">
+  <section aria-labelledby="enc-h">
+    <h2 id="enc-h" class="mb-3 font-serif text-xl font-medium">Encryption</h2>
+    <dl>
+      <div class="grid gap-1 border-t border-rule py-3 sm:grid-cols-[11rem_1fr] sm:gap-4"><dt class="text-sm text-ink-2">Algorithm</dt><dd>{{ f.algorithm }}</dd></div>
+      <div class="grid gap-1 border-t border-rule py-3 sm:grid-cols-[11rem_1fr] sm:gap-4"><dt class="text-sm text-ink-2">Base nonce<br>8 random bytes, in the database</dt><dd class="break-all font-mono text-[13px]">{{ base_nonce_hex }}</dd></div>
+      <div class="grid gap-1 border-t border-rule py-3 sm:grid-cols-[11rem_1fr] sm:gap-4"><dt class="text-sm text-ink-2">Nonce of chunk 0<br>base nonce + 32-bit counter</dt><dd class="break-all font-mono text-[13px]">{{ example_nonce_hex }}</dd></div>
+      <div class="grid gap-1 border-t border-rule py-3 sm:grid-cols-[11rem_1fr] sm:gap-4"><dt class="text-sm text-ink-2">Wrapped data key<br>encrypted by the master key</dt><dd class="break-all font-mono text-[13px]">{{ wrapped_key_hex }}</dd></div>
+      <div class="grid gap-1 border-t border-rule py-3 sm:grid-cols-[11rem_1fr] sm:gap-4"><dt class="text-sm text-ink-2">Key-wrap nonce</dt><dd class="break-all font-mono text-[13px]">{{ wrap_nonce_hex }}</dd></div>
+      <div class="grid gap-1 border-y border-rule py-3 sm:grid-cols-[11rem_1fr] sm:gap-4"><dt class="text-sm text-ink-2">Master key version</dt><dd>{{ f.master_key_version }}</dd></div>
+    </dl>
+  </section>
+
+  <section aria-labelledby="store-h">
+    <h2 id="store-h" class="mb-3 font-serif text-xl font-medium">Storage</h2>
+    <dl>
+      <div class="grid gap-1 border-t border-rule py-3 sm:grid-cols-[11rem_1fr] sm:gap-4"><dt class="text-sm text-ink-2">Original size</dt><dd>{{ f.plaintext_size|filesizeformat }} <span class="text-ink-2">({{ f.plaintext_size }} bytes)</span></dd></div>
+      <div class="grid gap-1 border-t border-rule py-3 sm:grid-cols-[11rem_1fr] sm:gap-4"><dt class="text-sm text-ink-2">Encrypted size</dt><dd>{{ f.encrypted_size|filesizeformat }} <span class="text-ink-2">({{ f.encrypted_size }} bytes)</span></dd></div>
+      <div class="grid gap-1 border-t border-rule py-3 sm:grid-cols-[11rem_1fr] sm:gap-4"><dt class="text-sm text-ink-2">Chunks</dt><dd>{{ f.chunk_count }} × {{ f.chunk_size|filesizeformat }}</dd></div>
+      <div class="grid gap-1 border-t border-rule py-3 sm:grid-cols-[11rem_1fr] sm:gap-4"><dt class="text-sm text-ink-2">Authentication overhead</dt><dd>{{ overhead }} bytes <span class="text-ink-2">(16 per chunk)</span></dd></div>
+      <div class="grid gap-1 border-t border-rule py-3 sm:grid-cols-[11rem_1fr] sm:gap-4"><dt class="text-sm text-ink-2">Uploaded</dt><dd>{{ f.uploaded_at|date:"j M Y, H:i:s" }} UTC</dd></div>
+      <div class="grid gap-1 border-y border-rule py-3 sm:grid-cols-[11rem_1fr] sm:gap-4"><dt class="text-sm text-ink-2">Stored as<br>random UUID, private volume</dt><dd class="break-all font-mono text-[13px]">{{ storage_name }}</dd></div>
+    </dl>
+  </section>
+</div>
+
+<section class="mt-10" aria-labelledby="hex-h">
+  <h2 id="hex-h" class="font-serif text-xl font-medium">First 64 bytes on disk</h2>
+  <p class="mt-1 max-w-prose text-ink-2">This is all someone with access to the storage volume would see: no file signature, no readable text.</p>
+  <pre class="mt-3 overflow-x-auto rounded border border-rule bg-sheet px-4 py-3 font-mono text-[13px] leading-relaxed text-ink" tabindex="0">{% for r in preview_rows %}{{ r.offset }}  {{ r.hex|stringformat:"-47s" }}  |{{ r.ascii }}|
+{% endfor %}</pre>
+</section>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="max-w-prose">
+  <p class="text-sm font-medium text-bad">Integrity check failed</p>
+  <h1 class="mt-1 font-serif text-3xl font-medium">{{ title }}</h1>
+  <p class="mt-4">{{ message }}</p>
+  {% if reason %}<p class="mt-4 font-mono text-[13px] text-ink-2">{{ reason }}</p>{% endif %}
+  <p class="mt-4 text-ink-2">The attempt is recorded in your <a class="link" href="{% url 'activity' %}">activity log</a>. If you did not expect this, re-upload the original file and tell whoever runs this server.</p>
+  <p class="mt-8"><a href="{% url 'file_list' %}" class="btn-quiet no-underline">Back to my files</a></p>
+</div>
+{% endblock %}

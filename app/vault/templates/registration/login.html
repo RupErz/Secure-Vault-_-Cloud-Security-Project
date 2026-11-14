@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+<div class="max-w-sm">
+  <h1 class="font-serif text-3xl font-medium">Log in</h1>
+  <p class="mt-2 text-ink-2">Your files stay encrypted until you download them.</p>
+
+  {% if locked %}
+    <p role="alert" class="mt-6 rounded bg-bad-tint px-3 py-2 text-sm text-bad">
+      Too many failed log-in attempts from your address. Wait {{ lockout_minutes }} minutes, then try again.
+    </p>
+  {% endif %}
+
+  <form method="post" class="mt-6 space-y-5">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <p role="alert" class="rounded bg-bad-tint px-3 py-2 text-sm text-bad">Wrong username or password. Check both (they are case-sensitive) and try again.</p>
+    {% endif %}
+    <div>
+      <label for="id_username" class="label">Username</label>
+      <input id="id_username" name="username" autocomplete="username" required autofocus class="field">
+    </div>
+    <div>
+      <label for="id_password" class="label">Password</label>
+      <input id="id_password" type="password" name="password" autocomplete="current-password" required class="field">
+    </div>
+    <input type="hidden" name="next" value="{{ next }}">
+    <button class="btn-primary w-full py-2 text-base">Log in</button>
+  </form>
+  <p class="mt-6 text-sm text-ink-2">No account yet? <a class="link" href="{% url 'register' %}">Create one</a></p>
+</div>
+{% endblock %}

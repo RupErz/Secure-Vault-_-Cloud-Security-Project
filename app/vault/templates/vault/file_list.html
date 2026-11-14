@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}My files{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+  <h1 class="font-serif text-3xl font-medium">My files</h1>
+  <p class="text-sm text-ink-2">{{ files|length }} file{{ files|length|pluralize }}{% if files %} · {{ total_size|filesizeformat }}{% endif %}</p>
+</div>
+<p class="mt-2 max-w-prose text-balance text-ink-2">Each file is encrypted with its own key before it is written to disk. Only you can see them.</p>
+
+<div id="dropzone"
+     data-url="{% url 'file_upload' %}" data-csrf="{{ csrf_token }}"
+     data-max="{{ max_bytes }}" data-allowed="{{ allowed|join:',' }}"
+     class="mt-8 flex flex-wrap items-center justify-between gap-4 rounded border border-dashed border-edge px-5 py-5 transition-colors duration-150 data-[active=true]:border-ok data-[active=true]:bg-ok-tint">
+  <div>
+    <p class="font-medium">Drop files here to encrypt and upload</p>
+    <p class="help">Up to {{ max_bytes|filesizeformat }} each · {{ allowed|join:", " }}</p>
+  </div>
+  <button type="button" id="pick-files" class="btn-primary">Choose files</button>
+  <input id="file-input" type="file" multiple class="hidden" tabindex="-1">
+</div>
+<div id="upload-list" class="mt-4" aria-live="polite"></div>
+
+<div class="mt-8 overflow-x-auto">
+  <table class="w-full text-left">
+    <caption class="sr-only">Your encrypted files</caption>
+    <thead class="hidden sm:table-header-group">
+      <tr class="border-b border-edge">
+        <th scope="col" class="th">Name</th>
+        <th scope="col" class="th text-right">Size</th>
+        <th scope="col" class="th hidden sm:table-cell">Uploaded</th>
+        <th scope="col" class="th"><span class="sr-only">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for f in files %}
+      <tr class="block border-b border-rule py-3 sm:table-row sm:py-0">
+        <td class="td block break-words px-0 py-1 sm:table-cell sm:px-3 sm:py-3"><a href="{% url 'file_detail' f.id %}" class="link font-medium">{{ f.original_name }}</a></td>
+        <td class="td block whitespace-nowrap px-0 py-0 text-sm text-ink-2 sm:table-cell sm:px-3 sm:py-3 sm:text-right sm:text-base">{{ f.plaintext_size|filesizeformat }}<span class="sm:hidden"> · {{ f.uploaded_at|date:"j M Y" }}</span></td>
+        <td class="td hidden whitespace-nowrap text-ink-2 sm:table-cell">{{ f.uploaded_at|date:"j M Y, H:i" }}</td>
+        <td class="td block px-0 pb-0 pt-2 sm:table-cell sm:px-3 sm:py-3">
+          <div class="flex items-center gap-1 sm:justify-end">
+            <a href="{% url 'file_download' f.id %}" class="btn-quiet no-underline" aria-label="Download {{ f.original_name }}">Download</a>
+            <form method="post" action="{% url 'file_delete' f.id %}" data-confirm="Delete “{{ f.original_name|escapejs }}” permanently? This cannot be undone.">{% csrf_token %}
+              <button class="btn-danger" aria-label="Delete {{ f.original_name }}">Delete</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4" class="px-3 py-10 text-ink-2">No files yet. Drop one above to encrypt and store it.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'vault/upload.js' %}"></script>{% endblock %}

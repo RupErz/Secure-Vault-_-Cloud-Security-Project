@@ -1,0 +1,42 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}SecureVault{% endblock %} · SecureVault</title>
+  <link rel="preload" href="{% static 'vault/fonts/ibm-plex-sans-latin-400-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'vault/tailwind.css' %}">
+</head>
+<body class="min-h-screen">
+  <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:rounded focus:bg-ink focus:px-3 focus:py-2 focus:text-paper">Skip to content</a>
+
+  <header class="border-b border-rule">
+    <div class="mx-auto flex max-w-page flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-4 sm:px-6">
+      <a href="{% url 'file_list' %}" class="font-serif text-xl font-medium tracking-tight text-ink no-underline">SecureVault</a>
+      <nav class="flex items-center gap-5 text-sm" aria-label="Main">
+        {% if user.is_authenticated %}
+          {% url 'file_list' as files_url %}{% url 'activity' as activity_url %}
+          <a href="{{ files_url }}" class="text-ink underline-offset-8 hover:underline {% if request.path == files_url %}underline decoration-ink font-medium{% endif %}" {% if request.path == files_url %}aria-current="page"{% endif %}>My files</a>
+          <a href="{{ activity_url }}" class="text-ink underline-offset-8 hover:underline {% if request.path == activity_url %}underline decoration-ink font-medium{% endif %}" {% if request.path == activity_url %}aria-current="page"{% endif %}>Activity</a>
+          <span class="hidden text-ink-2 sm:inline">Signed in as {{ user.get_username }}</span>
+          <form method="post" action="{% url 'logout' %}">{% csrf_token %}
+            <button class="btn-quiet">Log out</button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}" class="text-ink hover:underline">Log in</a>
+          <a href="{% url 'register' %}" class="btn-primary no-underline">Create account</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="mx-auto max-w-page px-4 py-10 sm:px-6">
+    {% for m in messages %}
+      <p role="status" class="mb-6 rounded px-3 py-2 text-sm {% if m.tags == 'error' %}bg-bad-tint text-bad{% else %}bg-ok-tint text-ok{% endif %}">{{ m }}</p>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+  <script src="{% static 'vault/app.js' %}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

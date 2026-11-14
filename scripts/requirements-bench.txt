@@ -1,0 +1,2 @@
+# Only needed for `scripts/benchmark.py plot` (charts). `benchmark.py run` uses the standard library.
+matplotlib>=3.8

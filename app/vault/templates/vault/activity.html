@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Activity{% endblock %}
+{% block content %}
+<h1 class="font-serif text-3xl font-medium">Activity</h1>
+<p class="mt-2 max-w-prose text-balance text-ink-2">Your last 200 recorded events: uploads, downloads, deletions, failed access and log-ins.</p>
+
+<div class="mt-8 overflow-x-auto">
+  <table class="w-full min-w-[40rem] text-left">
+    <caption class="sr-only">Audit events for your account</caption>
+    <thead>
+      <tr class="border-b border-edge">
+        <th scope="col" class="th">Time (UTC)</th><th scope="col" class="th">Event</th><th scope="col" class="th">File</th><th scope="col" class="th">IP address</th><th scope="col" class="th">Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for e in events %}
+      <tr class="border-b border-rule text-sm">
+        <td class="td whitespace-nowrap text-ink-2">{{ e.created_at|date:"j M Y, H:i:s" }}</td>
+        <td class="td whitespace-nowrap font-medium
+          {% if e.action == 'DOWNLOAD_FAILED' or e.action == 'ACCESS_DENIED' or e.action == 'LOGIN_FAILED' or e.action == 'LOGIN_BLOCKED' or e.action == 'UPLOAD_REJECTED' %}text-bad
+          {% elif e.action == 'DELETE' %}text-warn
+          {% else %}text-ink{% endif %}">{{ e.get_action_display }}</td>
+        <td class="td break-words">{{ e.file_name|default:"–" }}</td>
+        <td class="td font-mono text-[13px] text-ink-2">{{ e.ip_address|default:"–" }}</td>
+        <td class="td text-ink-2">{{ e.detail }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="px-3 py-10 text-ink-2">Nothing recorded yet. Upload or download a file and it will show up here.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
